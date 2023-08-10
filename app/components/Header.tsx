@@ -1,25 +1,37 @@
 "use client";
 
 import Logo from "@/ui/Logo";
-import { Github, MoonIcon, SunIcon, Twitter } from "lucide-react";
+import { Github, MoonIcon, SunIcon, Twitter, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Inter } from "next/font/google";
 import Link from "next/link";
 import React from "react";
+import { logout } from "@/lib/services/auth.service";
+import { AppRouterInstance } from "next/dist/shared/lib/app-router-context";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter( { subsets: [ "latin" ] } );
+
+
 
 const Header = () => {
-  const [stars, setStars] = React.useState(0);
+  const router: AppRouterInstance = useRouter();
+  const [ stars, setStars ] = React.useState( 0 );
   const { theme: currentTheme, setTheme } = useTheme();
 
-  React.useEffect(() => {
-    fetch("https://api.github.com/repos/NiazMorshed2007/appwrite-writer")
-      .then((res) => res.json())
-      .then((res) => {
-        setStars(res.stargazers_count);
-      });
-  }, []);
+  const handleLogout = async () => {
+    await logout();
+    localStorage.setItem( "user", null );
+    router.push( "/" );
+  };
+
+  React.useEffect( () => {
+    fetch( "https://api.github.com/repos/NiazMorshed2007/appwrite-writer" )
+      .then( ( res ) => res.json() )
+      .then( ( res ) => {
+        setStars( res.stargazers_count );
+      } );
+  }, [] );
   return (
     <header
       className={`${inter.className} w-full header backdrop-blur-sm z-50 py-5 fixed top-0 left-0 flex items-center justify-between px-[7%]`}
@@ -39,7 +51,7 @@ const Header = () => {
         </Link>
         <button
           className="rounded-full w-[34px] flex items-center justify-center p-0 h-[34px]"
-          onClick={() => setTheme(currentTheme === "light" ? "dark" : "light")}
+          onClick={() => setTheme( currentTheme === "light" ? "dark" : "light" )}
         >
           <SunIcon
             size={20}
@@ -49,6 +61,9 @@ const Header = () => {
             size={20}
             className="absolute rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
           />
+        </button>
+        <button>
+          <LogOut size={20} onClick={handleLogout} />
         </button>
       </nav>
     </header>

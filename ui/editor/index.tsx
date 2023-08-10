@@ -13,134 +13,135 @@ import { TiptapEditorProps } from "./props";
 import LoadingCircle from "../icons/loading-circle";
 
 export default function Editor() {
-  const [docId, setDocId] = useState<string>(""); // TODO: [1
-  const [content, setContent] = useState({});
-  const [saveStatus, setSaveStatus] = useState("Saved");
-  const [hydrated, setHydrated] = useState(false);
+  const [ docId, setDocId ] = useState<string>( "" ); // TODO: [1
+  const [ content, setContent ] = useState( {} );
+  const [ saveStatus, setSaveStatus ] = useState( "Saved" );
+  const [ hydrated, setHydrated ] = useState( false );
 
-  const debouncedUpdates = useDebouncedCallback(async ({ editor }) => {
+  const debouncedUpdates = useDebouncedCallback( async ( { editor } ) => {
     const json = editor.getJSON();
-    setSaveStatus("Saving...");
-    const updatedContent = await updateContent(docId, {
-      content: JSON.stringify(json),
-    });
+    setSaveStatus( "Saving..." );
+    await updateContent( docId, {
+      content: JSON.stringify( json ),
+    } );
     // Simulate a delay in saving.
-    setTimeout(() => {
-      setSaveStatus("Saved");
-    }, 500);
-  }, 750);
+    setTimeout( () => {
+      setSaveStatus( "Saved" );
+    }, 500 );
+  }, 750 );
 
-  const editor = useEditor({
+  const editor = useEditor( {
     extensions: TiptapExtensions,
     editorProps: TiptapEditorProps,
-    onUpdate: (e) => {
-      setSaveStatus("Unsaved");
+    onUpdate: ( e ) => {
+      setSaveStatus( "Unsaved" );
       const selection = e.editor.state.selection;
-      const lastTwo = getPrevText(e.editor, {
+      const lastTwo = getPrevText( e.editor, {
         chars: 2,
-      });
-      if (lastTwo === "++" && !isLoading) {
-        e.editor.commands.deleteRange({
+      } );
+      if ( lastTwo === "++" && !isLoading ) {
+        e.editor.commands.deleteRange( {
           from: selection.from - 2,
           to: selection.from,
-        });
-        window.alert(
-          "Sorry, this feature is not available on production. Setup locally with your API to use AI writing."
-        );
-        // TODO: [1] Uncomment this to enable completion
-        // complete(
-        //   getPrevText(e.editor, {
-        //     chars: 5000,
-        //   })
+        } );
+        // window.alert(
+        //   "Sorry, this feature is not available on production. Setup locally with your API to use AI writing."
         // );
+        // TODO: [1] Uncomment this to enable completion
+        complete(
+          getPrevText( e.editor, {
+            chars: 5000,
+          } )
+        );
       } else {
-        debouncedUpdates(e);
+        debouncedUpdates( e );
       }
     },
     autofocus: "end",
-  });
+  } );
 
-  const { complete, completion, isLoading, stop } = useCompletion({
+  const { complete, completion, isLoading, stop } = useCompletion( {
     id: "novel",
     api: "/api/generate",
-    onFinish: (_prompt, completion) => {
-      editor?.commands.setTextSelection({
+    onFinish: ( _prompt, completion ) => {
+      editor?.commands.setTextSelection( {
         from: editor.state.selection.from - completion.length,
         to: editor.state.selection.from,
-      });
+      } );
     },
-    onError: (err) => {
-      toast.error(err.message);
-      if (err.message === "You have reached your request limit for the day.") {
+    onError: ( err ) => {
+      toast.error( err.message );
+      if ( err.message === "You have reached your request limit for the day." ) {
+        // show error
       }
     },
-  });
+  } );
 
-  const prev = useRef("");
+  const prev = useRef( "" );
 
   // Insert chunks of the generated text
-  useEffect(() => {
-    const diff = completion.slice(prev.current.length);
+  useEffect( () => {
+    const diff = completion.slice( prev.current.length );
     prev.current = completion;
-    editor?.commands.insertContent(diff);
-  }, [isLoading, editor, completion]);
+    editor?.commands.insertContent( diff );
+  }, [ isLoading, editor, completion ] );
 
-  useEffect(() => {
+  useEffect( () => {
     // if user presses escape or cmd + z and it's loading,
     // stop the request, delete the completion, and insert back the "++"
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" || (e.metaKey && e.key === "z")) {
+    const onKeyDown = ( e: KeyboardEvent ) => {
+      if ( e.key === "Escape" || ( e.metaKey && e.key === "z" ) ) {
         stop();
-        if (e.key === "Escape") {
-          editor?.commands.deleteRange({
+        if ( e.key === "Escape" ) {
+          editor?.commands.deleteRange( {
             from: editor.state.selection.from - completion.length,
             to: editor.state.selection.from,
-          });
+          } );
         }
-        editor?.commands.insertContent("++");
+        editor?.commands.insertContent( "++" );
       }
     };
-    const mousedownHandler = (e: MouseEvent) => {
+    const mousedownHandler = ( e: MouseEvent ) => {
       e.preventDefault();
       e.stopPropagation();
       stop();
-      if (window.confirm("AI writing paused. Continue?")) {
-        complete(editor?.getText() || "");
+      if ( window.confirm( "AI writing paused. Continue?" ) ) {
+        complete( editor?.getText() || "" );
       }
     };
-    if (isLoading) {
-      document.addEventListener("keydown", onKeyDown);
-      window.addEventListener("mousedown", mousedownHandler);
+    if ( isLoading ) {
+      document.addEventListener( "keydown", onKeyDown );
+      window.addEventListener( "mousedown", mousedownHandler );
     } else {
-      document.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("mousedown", mousedownHandler);
+      document.removeEventListener( "keydown", onKeyDown );
+      window.removeEventListener( "mousedown", mousedownHandler );
     }
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("mousedown", mousedownHandler);
+      document.removeEventListener( "keydown", onKeyDown );
+      window.removeEventListener( "mousedown", mousedownHandler );
     };
-  }, [stop, isLoading, editor, complete, completion.length]);
+  }, [ stop, isLoading, editor, complete, completion.length ] );
 
   // Hydrate the editor with the content from localStorage.
-  useEffect(() => {
-    if (editor && content) {
-      editor.commands.setContent(content);
-      setHydrated(true);
+  useEffect( () => {
+    if ( editor && content ) {
+      editor.commands.setContent( content );
+      setHydrated( true );
     }
-  }, [editor, content, hydrated]);
+  }, [ editor, content, hydrated ] );
 
-  useEffect(() => {
+  useEffect( () => {
     const fetchContent = async () => {
       try {
         const data = await getContent();
-        setDocId(data.documents[0].$id);
-        setContent(JSON.parse(data.documents[0].content));
-      } catch (err) {
-        console.error(err);
+        setDocId( data.documents[ 0 ].$id );
+        setContent( JSON.parse( data.documents[ 0 ].content ) );
+      } catch ( err ) {
+        console.error( err );
       }
     };
     fetchContent();
-  }, []);
+  }, [] );
 
   return (
     <div
